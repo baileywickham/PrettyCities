@@ -41,12 +41,12 @@ def runWithFile(filename:str, varyHeading=False, live=False):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser('Google maps street view CLI')
-    p.add_argument('--csv')
-    p.add_argument('--lat')
-    p.add_argument('--long')
-    p.add_argument('--filter')
-    p.add_argument('--varyHeading', action='store_true',  default=False)
-    p.add_argument('--live', action='store_true',  default=False)
+    p.add_argument('--csv', help='Take input of <lat,long,score> from csv, download each image and write to a file')
+    p.add_argument('--lat',help='Use with long, download one file')
+    p.add_argument('--long',help='Use with lat, download one file')
+    p.add_argument('--filter',help='filter a file from the speadsheet into a CSV')
+    p.add_argument('--varyHeading', action='store_true',  default=False, help='vary the heading on the images, use default, 0, 90, 180, 270')
+    p.add_argument('--live', action='store_true',  default=False, help='turn off dry_run')
     args = p.parse_args()
     if args.csv:
         runWithFile(args.csv, varyHeading=args.varyHeading, live=args.live)
