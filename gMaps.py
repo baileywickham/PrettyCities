@@ -5,7 +5,7 @@ from typing import Union, Optional, cast
 import random
 import string
 
-datadir = 'data/'
+datadir = 'data'
 
 class Filename():
     def __init__(self, base, score=0) -> None:
@@ -15,12 +15,15 @@ class Filename():
         self.score = score
 
     def genID(self, len=6):
-        self.rand = ''.join(random.choice(string.digits) for _ in range(len))
+        return ''.join(random.choice(string.digits) for _ in range(len))
 
     def build(self):
+        return f'{datadir}/{self.score}/{self.buildFilename()}'
+
+    def buildFilename(self):
         return f'{self.score}-{self.base}-{self.genID()}.jpg'
-    def buildWithHeading(self, heading:str):
-        return f'{self.score if self.score else 0}-{self.base}-{heading}-{self.genID()}.jpg'
+    def buildWithHeading(self, heading:Union[str,float]):
+        return f'{datadir}/{self.score}/{self.score if self.score else 0}-{self.base}-{heading}-{self.genID()}.jpg'
 
 
 
@@ -35,7 +38,7 @@ class GMaps:
         self.pano : Optional[str] = pano
         self.dry_run : bool = dry_run
 
-    def contvert(self, *args) -> list[float]:
+    def convert(self, *args) -> list[float]:
         converted = []
         for arg in args:
             if self.isDMS(arg):
@@ -76,21 +79,19 @@ class GMaps:
         params = {'size':self.size,
                 'location': f'{lat},{long}'}
 
-        rqs = [params]
+        requestsWithFilenames = [(params, filename.build())]
         if varyHeading:
-            rqs += [params | {'heading':x} for x in [0, 90, 190, 270]]
-        responses = [self.get(r) for r in rqs]
+            requestsWithFilenames += [(params | {'heading':x}, filename.buildWithHeading(x)) for x in [0, 90, 190, 270]]
+        responses = [(self.get(r), f) for r,f in requestsWithFilenames]
 
-        for r in responses:
-            r = cast(requests.Response, r)
-            if not r.ok:
-                print(f'error calling on {lat},{long}: {r.content}')
+        for r, name in responses:
+            if r == None:
+                print(f'Response for filename {name}')
+                return
+            if r.ok:
+                self.writeImageToFile(name, r.content)
             else:
-                if r.params and r.params.get('heading'):
-                    self.writeImageToFile(filename.buildWithHeading(r.params.get('heading')),
-                            r.content)
-                else:
-                    self.writeImageToFile(filename.build(), r.content)
+                print(f'error calling on {lat},{long}: {r.content}')
 
     def writeImageToFile(self, filename: str, data):
         print(f'writing {filename}')
